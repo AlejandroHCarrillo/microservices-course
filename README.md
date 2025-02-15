@@ -26,3 +26,9 @@ dotnet add package Microsoft.EntityFrameworkCore.Design (Version="5.0.8)
 dotnet add package Microsoft.EntityFrameworkCore.InMemory (Version="5.0.8)
 dotnet add package Microsoft.EntityFrameworkCore.SqlServer (Version="5.0.8)
 
+** Build the project
+dotnet build
+
+* Para poblar la base de datos usando el contexto
+se debe crear una clase llamada PrepDb en la carpeta de Data. En la clase de Startup agregar la linea *PrepDb.PrepPopulation(app);* para que se ejecute la poblacion de datos.
+
