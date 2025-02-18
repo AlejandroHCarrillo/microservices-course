@@ -34,11 +34,11 @@ Abrir folder del proyecto con code
 code -r PlatformService
 
 **Instalar packetes** 
-* dotnet add package AutoMapper.Extensions.Microsoft.DependencyInjection (Version="8.1.1")
-* dotnet add package Microsoft.EntityFrameworkCore (Version="5.0.8)
-* dotnet add package Microsoft.EntityFrameworkCore.Design (Version="5.0.8)
-* dotnet add package Microsoft.EntityFrameworkCore.InMemory (Version="5.0.8)
-* dotnet add package Microsoft.EntityFrameworkCore.SqlServer (Version="5.0.8)
+* dotnet add package AutoMapper.Extensions.Microsoft.DependencyInjection --version 8.1.1
+* dotnet add package Microsoft.EntityFrameworkCore --version 5.0.8
+* dotnet add package Microsoft.EntityFrameworkCore.Design --version 5.0.8
+* dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 5.0.8
+* dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 5.0.8
 
 ** Build the project
 dotnet build
@@ -259,6 +259,10 @@ en ete caso es 30470
 
 insertar aqui imagen 003.jpg
 
-
 3:22:00
+
+Agregar nuevo proyect .net core 5.0
+dotnet new webapi -n CommandsService --framework net5.0
+
+Agregar las mismos paquetes de nuguet
 
