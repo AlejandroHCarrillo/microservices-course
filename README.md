@@ -226,7 +226,7 @@ Dentro de este folder crear archivo platforms-depl.yaml
 verificar version de kubernetes
 kubectl version
 
-Para aplicar el archivo yaml
+Para aplicar el archivo yaml platforms-service
 
 kubectl apply -f platforms-depl.yaml
 
@@ -241,4 +241,24 @@ kubectl get pods
 Eliminar un deployment
 
 kubectl delete deployment platforms-depl
+
+para ver los servicios
+
+kubectl get service
+
+Para aplicar el archivo yaml 
+
+kubectl apply -f platform-np-srv.yaml
+
+Para ver la app funcionando en kubernetes correr el comando 
+
+kubectl get service
+
+verificar el puerto del servicio platformnpservice-srv 
+en ete caso es 30470
+
+insertar aqui imagen 003.jpg
+
+
+3:22:00
 

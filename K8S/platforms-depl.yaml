@@ -1,3 +1,4 @@
+# Este archivo YAML sirve para configurar el kubernete del platform service 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
