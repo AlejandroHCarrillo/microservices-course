@@ -260,9 +260,93 @@ en ete caso es 30470
 insertar aqui imagen 003.jpg
 
 3:22:00
+## Crear segundo Proyecto CommandsService ##
 
-Agregar nuevo proyect .net core 5.0
+*Agregar nuevo proyect .net core 5.0*
+
 dotnet new webapi -n CommandsService --framework net5.0
 
-Agregar las mismos paquetes de nuguet
+**Instalar packetes** 
+* dotnet add package AutoMapper.Extensions.Microsoft.DependencyInjection --version 8.1.1
+* dotnet add package Microsoft.EntityFrameworkCore --version 5.0.8
+* dotnet add package Microsoft.EntityFrameworkCore.Design --version 5.0.8
+* dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 5.0.8
 
+>Nota: El paquete de sql no es agregado a este proyecto
+
+Eliminar el controlador y la clase de weather
+
+En el archivo launchSettings.json cambiar los puertos 5000 y 5001 por 6000 y 6001
+para evitar usar los mismos del otro servicio
+
+
+Asi quedaria:
+
+\`\`\`
+"applicationUrl": "https://localhost:6001;http://localhost:6000"
+\`\`\`
+
+## Mensajeria Sincrona ##
+(Synchronous Messaging)
+La mensajeria sincrona se base en un ciclo de request / response, donde el "requester" tiene que esperar "await" por la respuesta "response".
+
+* Request / Response Cycle.
+* Requester will "wait" for response.
+* Externally facing Services usually synchronous (e.g. http requests)
+* Services Usually need to "know" about each other.
+
+We are using 2 forms
+* Http
+* Grpc
+
+## Mensajeria Asincrona ##
+(Asynchronous Messaging)
+
+* No Request / Response Cycle.
+* Requester does not "wait" for response.
+* Event model, e.g. publish - subscribe
+* Typically used between services.
+* Event bus is often used (we will using RabbitMQ)
+* Services don't need to "know" about each other just the bus.
+
+***RabbitMQ*** es un software de cola de mensajes (message broker) que permite la comunicación entre aplicaciones distribuidas. Actúa como intermediario, recibiendo mensajes de una aplicación y entregándolos a otra, facilitando la comunicación asíncrona y mejorando la escalabilidad y la tolerancia a fallos.
+
+
+**Resumen hasta el momento** 
+* Crear un proyecto webapi para framework 5.0 llamado PlatformService
+* Preparar este proyecto para trabajar con entity Framework
+* Crear la infaestrucctura de datos EF context, Modelos, Dtos, automapper profiles, etc.
+* Crear la interfaz repository con los metodos SaveChanges, GetAllPlatforms, * GetPlatformById, CreatePlatform(Platform plat).
+* Implementar la interfaz
+* Crear el controlador Platformservice e injectar las interfaces IPlatformRepo, IMapper y ICommandDataClient
+
+* Implementar los siguientes endpoints
+GetPlatforms, GetPlatformById y CreatePlatform
+
+* Crear dockerfile para platforms
+* Crear y publicar imagen del Platform Service
+* Crear un kuberbete para ejecutar Platform Service
+
+* Crear otro Projecto webapi pare el framework 5.0 llamado commandsService
+* Agregar las mismas referencias que el proyecto anterior excepto sql
+* Agregar un controlador para *PlatformService*
+* En este controlador solo agregamos un endopoint llamad TestInboundConnection de tipo POST
+* 
+
+* Regresamos al proyecto PlatformService y agregamos el folder SyncDataservices/http 
+* Creamos una interfaz ICommandDataCient
+* Creamos una clase llamada HttpCommandDataClient que implementa la interfaz antes creada
+* A esta clase le injectamos las interfaces HttpClient y IConfiguration 
+
+4:16:00 
+
+En este momento debemos ejecutar el commandService y el platformService y agregar una nueva plataforma desde postman, si todo sale bien se creara sin ningun contratiempo.
+
+Ahora detenemos el commandService y volvemos a agregar una plataforma desde postman, ahora va a tardar mucho en ejecutarla, despues de un tiempo la va a crear pre en la consola  recibiremos este mensaje: "--> Could not send synchronosyly: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión. (localhost:6000)"
+
+Crear archivo dockerfile para commandsService
+docker build -t ahernandezcarrillo/commandservice .
+
+docker push ahernandezcarrillo/commandservice
+
+docker run -p 8080:80 ahernandezcarrillo/commandservice
