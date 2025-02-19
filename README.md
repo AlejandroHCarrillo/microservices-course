@@ -128,6 +128,8 @@ ejemplo:
 >El nombre de la app debe estar totalmente en minusculas
 >El punto al final es muy importante
 
+Subir el contenedor
+docker push ahernandezcarrillo/platformservice
 
 * Ejecuta un docker 
 
@@ -226,36 +228,36 @@ Dentro de este folder crear archivo platforms-depl.yaml
 verificar version de kubernetes
 kubectl version
 
-Para aplicar el archivo yaml platforms-service
+>Para aplicar el archivo yaml platforms-service
 
 kubectl apply -f platforms-depl.yaml
 
-Para ver los deployiments
+>Para ver los deployiments
 
 kubectl get deployments
 
-para ver los pods
+>Para ver los pods
 
 kubectl get pods
 
-Eliminar un deployment
+>Para eliminar un deployment
 
 kubectl delete deployment platforms-depl
 
-para ver los servicios
+>Para ver los servicios
 
 kubectl get service
 
-Para aplicar el archivo yaml 
+>Para aplicar el archivo yaml 
 
 kubectl apply -f platform-np-srv.yaml
 
-Para ver la app funcionando en kubernetes correr el comando 
+>Para ver la app funcionando en kubernetes correr el comando 
 
 kubectl get service
 
-verificar el puerto del servicio platformnpservice-srv 
-en ete caso es 30470
+>verificar el puerto del servicio platformnpservice-srv 
+en este caso es 30470
 
 insertar aqui imagen 003.jpg
 
@@ -350,3 +352,11 @@ docker build -t ahernandezcarrillo/commandservice .
 docker push ahernandezcarrillo/commandservice
 
 docker run -p 8080:80 ahernandezcarrillo/commandservice
+
+kubectl apply -f commands-depl.yaml
+
+>Restart deployment
+kubectl rollout restart deployment platforms-depl 
+
+>Nota el error "Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3] Failed to determine the https port for redirect." se soluciona comentando o eliminado la linea app.UseHttpsRedirection(); del archivo start de los 2 proyectos.
+
