@@ -504,3 +504,40 @@ el la carpeta del proyecto PlatformService
 Volvemos a aplicar el deploy 
 
 kubectl apply -f platforms-depl.yaml
+
+### Agregar endopoints al proyecto de commands
+
+Insertar imagen 004 aqui
+
+1. Crear la capeta Models, crear los modelos de platforms y commands
+2. Usar data annotations para definir los campos de la tabla
+3. Crear la carpeta Data y crear la clase appDbContext.cs (Usar como ejemplo el mismo archivo de PlatformService)
+4. Agregamos los DbSets usando los modelos antes creados. (estas seran las tablas que EF creara)
+5. Agregamos las relaciones de las tablas sobre escribiendo el metodo OnModelCreating
+```
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Platform>()
+                .HasMany(p => p.Commands)
+                .WithOne(p => p.Platform!)
+                .HasForeignKey(p => p.PlatformId);
+        }
+```
+Este código establece una relación entre Platform y Command donde una Platform puede tener muchos Commands, y cada Command tiene una clave foránea PlatformId que hace referencia a su Platform correspondiente.
+
+**modelBuilder.Entity<Platform>():** Esto le dice a Entity Framework Core que estamos configurando la entidad Platform.
+
+**.HasMany(p => p.Commands):** Esto define que la entidad Platform tiene una relación de "uno a muchos" con la entidad Command. En otras palabras, una Platform puede tener muchos Commands.
+
+**.WithOne(p => p.Platform!):** Esto define la parte inversa de la relación, especificando que cada Command tiene una relación de "uno a uno" con una Platform. El signo de exclamación (!) es un operador de supresión de advertencias de nulabilidad que le dice al compilador que Platform no será null.
+
+**.HasForeignKey(p => p.PlatformId):** Esto configura la clave foránea (foreign key) en la entidad Command que hace referencia a la entidad Platform. En este caso, PlatformId es la clave foránea en Command que se utiliza para vincular a la entidad Platform.
+
+
+```
+            modelBuilder.Entity<Command>()
+                .HasOne(p => p.Platform)
+                .WithMany(p => p.Commands)
+                .HasForeignKey(p => p.PlatformId);
+```
+Este código establece la relación entre Command y Platform donde cada Command está asociado con una Platform, y una Platform puede tener muchos Commands. La clave foránea PlatformId en Command se utiliza para mantener esta relación.

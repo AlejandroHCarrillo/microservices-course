@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using PlatformService.Models;
 
 namespace PlatformService.Data
