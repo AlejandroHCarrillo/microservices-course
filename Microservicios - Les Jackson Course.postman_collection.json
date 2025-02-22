@@ -1,0 +1,164 @@
+{
+	"info": {
+		"_postman_id": "f9e15b7b-8fd4-42ec-8e61-3e9bef8714d3",
+		"name": "Microservicios - Les Jackson Course",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "6781754"
+	},
+	"item": [
+		{
+			"name": "Local Env",
+			"item": [
+				{
+					"name": "PlatformService",
+					"item": [
+						{
+							"name": "Get All Platforms",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "https://localhost:5001/api/platforms"
+							},
+							"response": []
+						},
+						{
+							"name": "Get platform",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": "https://localhost:5001/api/platforms/3"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Platform",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"New Plat\",\r\n    \"publisher\": \"This is the new platform\",\r\n    \"cost\": \"Not Free\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "https://localhost:5001/api/platforms"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Command Service",
+					"item": [
+						{
+							"name": "Test inbound Connection",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": "http://localhost:6000/api/c/platforms"
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Docket Env",
+			"item": [
+				{
+					"name": "PlatformService",
+					"item": [
+						{
+							"name": "Get All Platforms",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "https://localhost:5001/api/platforms"
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "K8S",
+			"item": [
+				{
+					"name": "PatformService (Node Port)",
+					"item": [
+						{
+							"name": "Get All Platforms",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "http://localhost:30470/api/platforms"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Platform",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"New Plat Node Port\",\r\n    \"publisher\": \"This is the new platform\",\r\n    \"cost\": \"Not Free\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "http://localhost:30470/api/platforms"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Platform Service (Nginx)",
+					"item": [
+						{
+							"name": "Get All Platforms",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "http://acme.com/api/platforms"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Platform",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"New Plat Nginx\",\r\n    \"publisher\": \"This is the new platform\",\r\n    \"cost\": \"Not Free\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "http://acme.com/api/platforms"
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}

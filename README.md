@@ -52,7 +52,7 @@ dotnet run
 ## Dockers ##
 Crear archivo Dockerfile en la raiz 
 
->Nota: Se puede crear automaticamente el archivo docker desde VS code usando la extension de Docker para VS. Para verla hay que ir a la seccion de extensiones y usar este filtro \`@id:ms-azuretools.vscode-docker\`
+>Nota: Se puede crear automaticamente el archivo docker desde VS code usando la extension de Docker para VS. Para verla hay que ir a la seccion de extensiones y usar este filtro `@id:ms-azuretools.vscode-docker`
 
 **Docker hub**
 https://hub.docker.com
@@ -62,53 +62,56 @@ https://learn.microsoft.com/en-us/dotnet/core/docker/build-container?tabs=window
 
 **Ejemplo SDK 9.0**
 
-\`\`\`
->FROM mcr.microsoft.com/dotnet/sdk:90@sha256:3fcf6f1e809c0553f9feb222369f58749af314af6f063f389cbd2f913b4ad556 AS build
->WORKDIR /App
->
->\# Copy everything
->
->COPY . ./
->
->\# Restore as distinct layers
->
->RUN dotnet restore
->
->\# Build and publish a release
->
->RUN dotnet publish -o out
->
->\# Build runtime image
->
->FROM mcr.microsoft.com/dotnet/aspnet:9.0@sha256:b4bea3a52a0a77317fa93c5bbdb076623f81e3e2f201078d89914da71318b5d8
->
->WORKDIR /App
->
->COPY --from=build /App/out .
->
->ENTRYPOINT ["dotnet", "DotNet.Docker.dll"]
+```
+FROM mcr.microsoft.com/dotnet/sdk:90@sha256:3fcf6f1e809c0553f9feb222369f58749af314af6f063f389cbd2f913b4ad556 AS build
+WORKDIR /App
 
-\`\`\`
+\# Copy everything
+
+COPY . ./
+
+\# Restore as distinct layers
+
+RUN dotnet restore
+
+\# Build and publish a release
+
+RUN dotnet publish -o out
+
+\# Build runtime image
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0@sha256:b4bea3a52a0a77317fa93c5bbdb076623f81e3e2f201078d89914da71318b5d8
+
+WORKDIR /App
+
+COPY --from=build /App/out .
+
+ENTRYPOINT ["dotnet", "DotNet.Docker.dll"]
+
+```
 
 **Ejemplo para nuestro curso SDK 5.0**
 
->FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build-env
->
->WORKDIR /app
->
->COPY *.csproj ./
->
->COPY . ./
->
->RUN dotnet publish -c Release -o out
->
->FROM mcr.microsoft.com/dotnet/aspnet:5.0
->
->WORKDIR /app
->
->COPY --from=build-env /app/out .
->
->ENTRYPOINT ["dotnet", "PlatformService.dll"]
+```
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build-env
+
+WORKDIR /app
+
+COPY *.csproj ./
+
+COPY . ./
+
+RUN dotnet publish -c Release -o out
+
+FROM mcr.microsoft.com/dotnet/aspnet:5.0
+
+WORKDIR /app
+
+COPY --from=build-env /app/out .
+
+ENTRYPOINT ["dotnet", "PlatformService.dll"]
+```
+
 
 **Instalar Docker desktop**
 https://docs.docker.com/desktop/setup/install/windows-install/
@@ -122,7 +125,7 @@ docker build -t [docker id]/[nombre de la app]
 
 ejemplo:
 
-\`docker build -t ahernandezcarrillo/platformservice .\`
+```docker build -t ahernandezcarrillo/platformservice .```
 
 >Nota: el docker id es el nombre de usuario de docker hub. 
 >El nombre de la app debe estar totalmente en minusculas
@@ -284,9 +287,9 @@ para evitar usar los mismos del otro servicio
 
 Asi quedaria:
 
-\`\`\`
+```
 "applicationUrl": "https://localhost:6001;http://localhost:6000"
-\`\`\`
+```
 
 ## Mensajeria Sincrona ##
 (Synchronous Messaging)
@@ -374,8 +377,8 @@ https://kubernetes.github.io/ingress-nginx/deploy/#docker-desktop
 
 >Crear el kuberdete de ingress nginx
 
-\`\`\`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/aws/deploy.yaml
-\`\`\`
+```kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/aws/deploy.yaml
+```
 
 Si vemos los deployments (kubectl get deployments) o los pods (kubectl get pods) no vamos a encontrar nada relacionado a ingress-nginx
 
@@ -410,3 +413,94 @@ con esto
 5:04 
 
 kubectl apply -f ingress-srv.yaml
+
+## Local persistance 
+
+El comando *storageclass* se utiliza en Kubernetes para listar todas las clases de almacenamiento disponibles en el clúster. Las clases de almacenamiento definen las políticas de almacenamiento que se pueden aplicar a los volúmenes persistentes. Cada clase de almacenamiento puede especificar detalles como el proveedor de almacenamiento, las políticas de replicación, los parámetros de rendimiento, entre otros.
+
+Cada clase de almacenamiento tiene un nombre (NAME), un provisionador (PROVISIONER), una política de recuperación (RECLAIMPOLICY), un modo de vinculación de volúmenes (VOLUMEBINDINGMODE), si permite la expansión de volumen (ALLOWVOLUMEEXPANSION) y su edad (AGE) en el clúster.
+
+Ejemplo:
+*kubectl get storageclass*
+
+```
+NAME                PROVISIONER                RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+standard            kubernetes.io/gce-pd       Delete          Immediate           true                   10d
+fast                kubernetes.io/aws-ebs      Delete          Immediate           false                  5d
+slow                kubernetes.io/glusterfs    Retain          WaitForFirstConsumer false                  20d
+```
+
+5:09 
+
+**Crear archivo en K8s llamado local-pvc.yaml**
+Este archivo nos permitira crear un contenedor de SQL server para guardar la informacion
+que ingresemos a la applicacion. Cuando terminemos hay que aplicara el deployment 
+
+kubectl apply -f local-pvc.yaml
+
+### Persistent Volume Claims, PVC ###
+Listar todos los volúmenes persistentes (Persistent Volume Claims, PVC) en el clúster. Un PVC es una solicitud de almacenamiento hecha por un usuario que especifica el tamaño y las características del volumen que necesitan para sus aplicaciones. El clúster intentará aprovisionar un volumen persistente (PV) que cumpla con los requisitos del PVC.
+
+```kubectl get pvc```
+
+# Setting up SQL server #
+5:14.50
+
+**Guardar el password de SQL en kubernetes**
+```kubectl create secret generic mssql --from-literal=SA_PASSWORD="pa55w0rd!"```
+
+**Aplicar el archivo kubberbetes para MSSQL**
+```kubectl apply -f mssql-plat-depl.yaml```
+
+Probar el SQL en kubernetes
+
+* Abrir el SQL Management studio
+* En el server name poner localhost, 1433
+* En el user Login, poner SA
+* En el password usar el password usardo en el secreet
+
+En el archivo startup del proyecto de platformService 
+usamos IWebHostEnvironment para saber en que ambiente estamos
+y asi saber si estamos en develpment usamos in memory 
+y si no usamos almacenamiento en SQL
+
+### Migraciones Entity Framework  ###
+Para crear una migracion debemos ejecutar el siguiente commando:
+
+```dotnet ef migrations add initialmigration```
+
+Para evitar el error de inMem en el archivo Startup.cs 
+en el metodo ConfigureServices hay que comentar temporarlmente la condicion _env.isProduction
+y todo el else asi solo quedara la seccion de SQL Server
+
+```services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(Configuration.GetConnectionString("PlatformConn")));```
+
+tambien hay que comentar la linea 
+```PrepDb.PrepPopulation(app, env.IsProduction());```
+
+Ademas hay que copiar la cadenade conexion del Produccion a Development para que se ejecute la migracion a la base de datos aun estando en development.
+
+ahora si podemos ejecutar la migracion.
+
+```dotnet ef migrations add initialmigration```
+
+>Nota en este paso tuve algunos problemas, para resolverlos tuve que instalar el dotnet entity framework
+>dotnet tool install --global dotnet-ef --version 5.0.8
+
+Una vez terminada la migracion volver a deployar el proyecto
+el la carpeta del proyecto PlatformService 
+
+1. docker build -t ahernandezcarrillo/platformservice .
+2. docker push ahernandezcarrillo/platformservice
+
+3. kubectl get deployments 
+4. kubectl rollout restart deployment platforms-depl 
+5. kubectl get pods
+
+>Nota: en el video hubo un error en el password asi que se tivo que eliminar el deploy usando 
+>el commando kubectl delete deployment platforms-depl
+>y volviendo a repetir 
+
+Volvemos a aplicar el deploy 
+
+kubectl apply -f platforms-depl.yaml
