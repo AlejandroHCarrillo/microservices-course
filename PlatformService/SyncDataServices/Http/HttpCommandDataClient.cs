@@ -18,6 +18,15 @@ namespace PlatformService.SyncDataServices.Http
             _httpClient = httpClient;
             _configurarion = configuration;
         }
+        /// <summary>
+        /// Este metodo construye un request con la plataforma creada y
+        /// lo manda al sercio de comando
+        /// usa la url llamada CommandService guardada en el appsettings.XXX.json 
+        /// para acceder al endpoint del commandService
+        /// ejemplo: http://localhost:6000/api/c/platforms/
+        /// </summary>
+        /// <param name="plat"></param>
+        /// <returns></returns>
         public async Task SendPlatformToCommand(PlatformReadDto plat)
         {
             var httpContent = new StringContent(

@@ -360,3 +360,53 @@ kubectl rollout restart deployment platforms-depl
 
 >Nota el error "Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3] Failed to determine the https port for redirect." se soluciona comentando o eliminado la linea app.UseHttpsRedirection(); del archivo start de los 2 proyectos.
 
+# Ingess nginx #
+NGINX Ingress es un componente fundamental en la arquitectura de Kubernetes. Actúa como un controlador de entrada que gestiona el acceso externo a los servicios dentro del clúster de Kubernetes, redirigiendo las peticiones HTTP y HTTPS de los usuarios a los servicios correspondientes.
+
+NGINX es una de las implementaciones más populares del controlador de entrada de Kubernetes debido a su eficiencia, rendimiento y flexibilidad. Permite a los administradores definir reglas de enrutamiento para el tráfico entrante, balanceo de carga, terminación SSL, y muchas otras funciones avanzadas para optimizar y asegurar el acceso a las aplicaciones desplegadas en Kubernetes.
+
+References
+
+https://github.com/kubernetes/ingress-nginx?tab=readme-ov-file
+https://kubernetes.github.io/ingress-nginx/deploy/
+https://kubernetes.github.io/ingress-nginx/deploy/#docker-desktop
+
+
+>Crear el kuberdete de ingress nginx
+
+\`\`\`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/aws/deploy.yaml
+\`\`\`
+
+Si vemos los deployments (kubectl get deployments) o los pods (kubectl get pods) no vamos a encontrar nada relacionado a ingress-nginx
+
+Para ver lo que hay en el namespace usamos el siguiente commando: 
+
+kubectl get namespace
+
+ahi si vamos a encontrar el ingress-nginx
+
+Para ver los pods dentro del namespace ingress-nginx ejecutamos 
+
+kubectl get pods --namespace=ingress-nginx
+
+obtener los servicios en el namespace ingress-nginx
+
+kubectl get services --namespace=ingress-nginx
+
+En el directorio de K8S agregar un nuevo archivo llamado ingress-srv.yaml
+
+5:00:00
+
+> Editar el archivo hosts ubicado en la ruta C:\Windows\System32\drivers\etc
+
+en mi caso tengo que actualizar esta linea 
+
+127.0.0.1 view-localhost # view localhost server
+
+con esto 
+
+127.0.0.1 acme.com
+
+5:04 
+
+kubectl apply -f ingress-srv.yaml

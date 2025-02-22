@@ -48,21 +48,25 @@ namespace PlatformService.Controllers
         [HttpPost]
         public async Task<ActionResult<PlatformReadDto>> CreatePlatform(PlatformCreateDto platformCreateDto)
         {
-            Console.WriteLine("--> Creating Platform...");
+            Console.WriteLine("--> Creating Platform desde el PlatformService...");
             var platformModel = _mapper.Map<Platform>(platformCreateDto);
             _repository.CreatePlatform(platformModel);
             _repository.SaveChanges();
 
             var platfromReadDto = _mapper.Map<PlatformReadDto>(platformModel);
 
-            // aqui enviamos un mensage del servicio de plataforma al de commandos
+            // aqui enviamos el mensage al servicio de commandos
+            // de que se ha creado una nueva plataforma
+            // usando el nuevo httpclient SendPlatformToCommand
             try
             { 
                 await _commandDataClient.SendPlatformToCommand(platfromReadDto);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"--> Could not send synchronosyly: {ex.Message}");
+                // Si el servicio de commandos esta caido enviara una excepcion
+                // informando que no se pudo enviar el mensaje al command service
+                Console.WriteLine($"--> Could not send the messagge synchronosyly to the command service: {ex.Message}");
             }
 
             return CreatedAtRoute(nameof(GetPlatformById), new { id = platfromReadDto.Id }, platfromReadDto);
