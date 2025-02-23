@@ -603,5 +603,110 @@ Insertar los profiles a mapear
 
 * Implemetar todos los los endpoints en los controladores de PlatformsController y CommnadsController
 
-7:20:00
+[7:24:00](https://youtu.be/DgVjEo3OGBI?t=26647)
+
+# RabitMQ
+
+RabbitMQ es una herramienta de código abierto utilizada para la implementación de sistemas de encolado de mensajes (message queuing). Actúa como un intermediario o broker que facilita la comunicación entre aplicaciones y sistemas distribuidos, permitiendo que estos intercambien mensajes de manera eficiente y confiable.
+
+RabbitMQ es ampliamente utilizado en arquitecturas distribuidas para mejorar la comunicación y la escalabilidad de las aplicaciones.
+
+**Funcionamiento Básico**
+En RabbitMQ, los mensajes son objetos ligeros que contienen datos y se utilizan para transmitir información entre aplicaciones. La plataforma recibe mensajes de los productores (aplicaciones que envían mensajes) y los entrega a los consumidores (aplicaciones que reciben y procesan los mensajes). Este proceso sigue el principio del patrón publicador/suscriptor.
+
+**Ventajas de RabbitMQ**
+***Fiabilidad:*** RabbitMQ es altamente confiable gracias a su modelo de colas y almacenamiento persistente de mensajes. Incluso si una aplicación se desconecta temporalmente, los mensajes permanecen en las colas y se entregan cuando el consumidor está nuevamente disponible.
+
+***Escalabilidad:*** La arquitectura de RabbitMQ permite distribuir el procesamiento de mensajes en múltiples nodos, facilitando el escalamiento horizontal de aplicaciones y garantizando un alto rendimiento.
+
+***Flexibilidad:*** Es posible configurar diferentes tipos de exchanges y colas para adaptarse a diversas necesidades de enrutamiento y distribución de mensajes.
+
+
+### Crear archivo yaml kubernetes para Rabbit MQ
+
+* En el folder K8S Crear un nuevo archivo YAML llamado rabbitmq-depl.yaml
+* Llenarlo conforme a la plantilla
+* Aplicarlo 
+
+kubectl apply -f rabbitmq-depl.yaml
+
+kubectl get services
+
+kubectl get deployments
+
+kubectl get pods
+
+* Para probar si esta corriendo RabbitMQ hay que abrir un navegador e ir a la siguiente URL 
+http://localhost:15672/
+
+Esta URL abre la interfaz web de RabbitMQ.
+
+Para usar RabbitMQ en los proyectos, hay que agregar el paquete de Nuguet
+En el directorio de PlatformService ejecutar 
+
+dotnet add package RabbitMQ.Client --version 6.2.2
+
+en el archivo **appsetings.Development.json** agregar dos nuevas entradas
+
+``` 
+    "RabbitMQHost": "localhost", 
+    "RabbitMQPort": "5672", 
+```
+
+en el archivo **appsetings.Development.json** agregar las entradas
+
+``` 
+    "RabbitMQHost": "rabbitmq-clusterip-srv", 
+    "RabbitMQPort": "5672", 
+```
+
+Agregar Dto ***PlatformPublishedDto***
+Este Dto contiene 3 propiedades
+
+* int Id 
+* string Name 
+* string Event 
+
+Agregar mapeo al profile de platforms
+```CreateMap<PlatformReadDto, PlatformPublishedDto>();```
+
+Ahora hay que agregar un folder en el proyecto llamada **AsynDataServices**
+dentro de este folder crear el archivo de interfaz **IMessageBusClient.cs**
+solo con la firma del metodo PublishNewPlatform
+
+```void PublishNewPlatform(PlatformPublishedDto platformPublishedDto);```
+
+Creamos al clase **MessageBusClient.cs** para implementar la interfaz
+>Nota: Aqui hay que poner mucha atencion por que es donde se configura el message bus.
+>se injecta **IConfiguration** en el constructor
+>se crea una connection factory y ahi se asignan el **HostName** y el **Port** 
+>guardados el appsettings en **RabbitMQHost** y **RabbitMQPort**
+>despues se crea la connexion, el canal y se configura el canal.
+
+```
+               _connection = factory.CreateConnection();
+               _channel = _connection.CreateModel();
+               _channel.ExchangeDeclare(exchange: "trigger", type: ExchangeType.Fanout);
+``` 
+
+Se crea un metodo PublishNewPlatform para publicar la platform en esta verificamos que la conexion este abierta y se envia el mensaje serializado.
+
+Metodos privados
+* SendMessage: codifica y envia el mensaje.
+* Dispose: Cierra el canal y la connexion.
+* RabbitMQ_ConnectionShutdown: Apaga la coneccion de RabbitMQ.
+
+
+En la clase startup.cs agregamos el servicio recien creado
+
+`:``services.AddSingleton<IMessageBusClient, MessageBusClient>();```
+
+[8:13:30](https://youtu.be/DgVjEo3OGBI?t=29627)
+### Modificar el PlatformsController para que use el messageBus ###
+
+En el PlatformsController inyectamos la interfaz IMessageBusClient con todo lo que ello implica.
+
+
+
+
 
