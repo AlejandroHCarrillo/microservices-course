@@ -541,3 +541,67 @@ Este código establece una relación entre Platform y Command donde una Platform
                 .HasForeignKey(p => p.PlatformId);
 ```
 Este código establece la relación entre Command y Platform donde cada Command está asociado con una Platform, y una Platform puede tener muchos Commands. La clave foránea PlatformId en Command se utiliza para mantener esta relación.
+
+### Implementar repositorio
+En el folder Data crear la interfaz ICommandRepo.cs donde definimos las firmas de los metodos 
+tanto para plataform como para command
+
+```
+        bool SaveChanges();
+
+        // Platforms
+        IEnumerable<Platform> GetAllPlatforms();
+        void CreatePlatform(Platform plat);
+        bool PlatformExists(int PlatformId);
+
+        // Commands
+        IEnumerable<Command> GetAllCommanfsForPlatform(int platformId);
+        Command GetCommand (int platformId, int commandId);
+        void CreateCommand(int platformId, Command command);
+```
+Ahora debemos crear la clase CommandRepo.cs que implementa esta interfaz.
+Implementamos los metodos de la interfaz y rellenamos estos metodos con el codigo para devolver la informacion requerida en cada caso
+
+**Ejemplo:**
+```
+        public IEnumerable<Command> GetAllCommandsForPlatform(int platformId)
+        {
+            return _context.Commands
+                           .Where(c => c.PlatformId == platformId)
+                           .OrderBy(c => c.Platform.Name);
+        }
+
+        public bool PlatformExists(int platformId)
+        {
+            return _context.Platforms.Any(p => p.Id == platformId);
+        }
+
+        public bool SaveChanges()
+        {
+            return (_context.SaveChanges() >= 0);
+        }
+```  
+
+### DTOs ###
+Crear folder llamado DTOS
+* Agregar DTOs PlatformReadDto, CommandReadDto y CommandCreateDto.
+
+### Agregar Automapper 
+* En el archivo startup.cs en el metodo ConfigureServices agregar 
+
+``` services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies()); ```
+6:42:00
+### Agregar Profiles 
+* Crear un folder llamado Profiles crear un archivo de profiles llamado CommandsProfiles.cs
+Insertar los profiles a mapear
+```
+            // Source -> Target
+            CreateMap<Platform, PlatformReadDto>();
+            CreateMap<CommandCreateDto, Command>();
+            CreateMap<Command, CommandReadDto>();
+```
+
+* Implemetar todos los los endpoints en los controladores de PlatformsController y CommnadsController
+
+7:20:00
+
