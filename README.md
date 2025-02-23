@@ -52,7 +52,7 @@ dotnet run
 ## Dockers ##
 Crear archivo Dockerfile en la raiz 
 
->Nota: Se puede crear automaticamente el archivo docker desde VS code usando la extension de Docker para VS. Para verla hay que ir a la seccion de extensiones y usar este filtro \`@id:ms-azuretools.vscode-docker\`
+>Nota: Se puede crear automaticamente el archivo docker desde VS code usando la extension de Docker para VS. Para verla hay que ir a la seccion de extensiones y usar este filtro `@id:ms-azuretools.vscode-docker`
 
 **Docker hub**
 https://hub.docker.com
@@ -62,53 +62,56 @@ https://learn.microsoft.com/en-us/dotnet/core/docker/build-container?tabs=window
 
 **Ejemplo SDK 9.0**
 
-\`\`\`
->FROM mcr.microsoft.com/dotnet/sdk:90@sha256:3fcf6f1e809c0553f9feb222369f58749af314af6f063f389cbd2f913b4ad556 AS build
->WORKDIR /App
->
->\# Copy everything
->
->COPY . ./
->
->\# Restore as distinct layers
->
->RUN dotnet restore
->
->\# Build and publish a release
->
->RUN dotnet publish -o out
->
->\# Build runtime image
->
->FROM mcr.microsoft.com/dotnet/aspnet:9.0@sha256:b4bea3a52a0a77317fa93c5bbdb076623f81e3e2f201078d89914da71318b5d8
->
->WORKDIR /App
->
->COPY --from=build /App/out .
->
->ENTRYPOINT ["dotnet", "DotNet.Docker.dll"]
+```
+FROM mcr.microsoft.com/dotnet/sdk:90@sha256:3fcf6f1e809c0553f9feb222369f58749af314af6f063f389cbd2f913b4ad556 AS build
+WORKDIR /App
 
-\`\`\`
+\# Copy everything
+
+COPY . ./
+
+\# Restore as distinct layers
+
+RUN dotnet restore
+
+\# Build and publish a release
+
+RUN dotnet publish -o out
+
+\# Build runtime image
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0@sha256:b4bea3a52a0a77317fa93c5bbdb076623f81e3e2f201078d89914da71318b5d8
+
+WORKDIR /App
+
+COPY --from=build /App/out .
+
+ENTRYPOINT ["dotnet", "DotNet.Docker.dll"]
+
+```
 
 **Ejemplo para nuestro curso SDK 5.0**
 
->FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build-env
->
->WORKDIR /app
->
->COPY *.csproj ./
->
->COPY . ./
->
->RUN dotnet publish -c Release -o out
->
->FROM mcr.microsoft.com/dotnet/aspnet:5.0
->
->WORKDIR /app
->
->COPY --from=build-env /app/out .
->
->ENTRYPOINT ["dotnet", "PlatformService.dll"]
+```
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build-env
+
+WORKDIR /app
+
+COPY *.csproj ./
+
+COPY . ./
+
+RUN dotnet publish -c Release -o out
+
+FROM mcr.microsoft.com/dotnet/aspnet:5.0
+
+WORKDIR /app
+
+COPY --from=build-env /app/out .
+
+ENTRYPOINT ["dotnet", "PlatformService.dll"]
+```
+
 
 **Instalar Docker desktop**
 https://docs.docker.com/desktop/setup/install/windows-install/
@@ -122,7 +125,7 @@ docker build -t [docker id]/[nombre de la app]
 
 ejemplo:
 
-\`docker build -t ahernandezcarrillo/platformservice .\`
+```docker build -t ahernandezcarrillo/platformservice .```
 
 >Nota: el docker id es el nombre de usuario de docker hub. 
 >El nombre de la app debe estar totalmente en minusculas
@@ -284,9 +287,9 @@ para evitar usar los mismos del otro servicio
 
 Asi quedaria:
 
-\`\`\`
+```
 "applicationUrl": "https://localhost:6001;http://localhost:6000"
-\`\`\`
+```
 
 ## Mensajeria Sincrona ##
 (Synchronous Messaging)
@@ -374,8 +377,8 @@ https://kubernetes.github.io/ingress-nginx/deploy/#docker-desktop
 
 >Crear el kuberdete de ingress nginx
 
-\`\`\`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/aws/deploy.yaml
-\`\`\`
+```kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/aws/deploy.yaml
+```
 
 Si vemos los deployments (kubectl get deployments) o los pods (kubectl get pods) no vamos a encontrar nada relacionado a ingress-nginx
 
@@ -410,3 +413,195 @@ con esto
 5:04 
 
 kubectl apply -f ingress-srv.yaml
+
+## Local persistance 
+
+El comando *storageclass* se utiliza en Kubernetes para listar todas las clases de almacenamiento disponibles en el clúster. Las clases de almacenamiento definen las políticas de almacenamiento que se pueden aplicar a los volúmenes persistentes. Cada clase de almacenamiento puede especificar detalles como el proveedor de almacenamiento, las políticas de replicación, los parámetros de rendimiento, entre otros.
+
+Cada clase de almacenamiento tiene un nombre (NAME), un provisionador (PROVISIONER), una política de recuperación (RECLAIMPOLICY), un modo de vinculación de volúmenes (VOLUMEBINDINGMODE), si permite la expansión de volumen (ALLOWVOLUMEEXPANSION) y su edad (AGE) en el clúster.
+
+Ejemplo:
+*kubectl get storageclass*
+
+```
+NAME                PROVISIONER                RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+standard            kubernetes.io/gce-pd       Delete          Immediate           true                   10d
+fast                kubernetes.io/aws-ebs      Delete          Immediate           false                  5d
+slow                kubernetes.io/glusterfs    Retain          WaitForFirstConsumer false                  20d
+```
+
+5:09 
+
+**Crear archivo en K8s llamado local-pvc.yaml**
+Este archivo nos permitira crear un contenedor de SQL server para guardar la informacion
+que ingresemos a la applicacion. Cuando terminemos hay que aplicara el deployment 
+
+kubectl apply -f local-pvc.yaml
+
+### Persistent Volume Claims, PVC ###
+Listar todos los volúmenes persistentes (Persistent Volume Claims, PVC) en el clúster. Un PVC es una solicitud de almacenamiento hecha por un usuario que especifica el tamaño y las características del volumen que necesitan para sus aplicaciones. El clúster intentará aprovisionar un volumen persistente (PV) que cumpla con los requisitos del PVC.
+
+```kubectl get pvc```
+
+# Setting up SQL server #
+5:14.50
+
+**Guardar el password de SQL en kubernetes**
+```kubectl create secret generic mssql --from-literal=SA_PASSWORD="pa55w0rd!"```
+
+**Aplicar el archivo kubberbetes para MSSQL**
+```kubectl apply -f mssql-plat-depl.yaml```
+
+Probar el SQL en kubernetes
+
+* Abrir el SQL Management studio
+* En el server name poner localhost, 1433
+* En el user Login, poner SA
+* En el password usar el password usardo en el secreet
+
+En el archivo startup del proyecto de platformService 
+usamos IWebHostEnvironment para saber en que ambiente estamos
+y asi saber si estamos en develpment usamos in memory 
+y si no usamos almacenamiento en SQL
+
+### Migraciones Entity Framework  ###
+Para crear una migracion debemos ejecutar el siguiente commando:
+
+```dotnet ef migrations add initialmigration```
+
+Para evitar el error de inMem en el archivo Startup.cs 
+en el metodo ConfigureServices hay que comentar temporarlmente la condicion _env.isProduction
+y todo el else asi solo quedara la seccion de SQL Server
+
+```services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(Configuration.GetConnectionString("PlatformConn")));```
+
+tambien hay que comentar la linea 
+```PrepDb.PrepPopulation(app, env.IsProduction());```
+
+Ademas hay que copiar la cadenade conexion del Produccion a Development para que se ejecute la migracion a la base de datos aun estando en development.
+
+ahora si podemos ejecutar la migracion.
+
+```dotnet ef migrations add initialmigration```
+
+>Nota en este paso tuve algunos problemas, para resolverlos tuve que instalar el dotnet entity framework
+>dotnet tool install --global dotnet-ef --version 5.0.8
+
+Una vez terminada la migracion volver a deployar el proyecto
+el la carpeta del proyecto PlatformService 
+
+1. docker build -t ahernandezcarrillo/platformservice .
+2. docker push ahernandezcarrillo/platformservice
+
+3. kubectl get deployments 
+4. kubectl rollout restart deployment platforms-depl 
+5. kubectl get pods
+
+>Nota: en el video hubo un error en el password asi que se tivo que eliminar el deploy usando 
+>el commando kubectl delete deployment platforms-depl
+>y volviendo a repetir 
+
+Volvemos a aplicar el deploy 
+
+kubectl apply -f platforms-depl.yaml
+
+### Agregar endopoints al proyecto de commands
+
+Insertar imagen 004 aqui
+
+1. Crear la capeta Models, crear los modelos de platforms y commands
+2. Usar data annotations para definir los campos de la tabla
+3. Crear la carpeta Data y crear la clase appDbContext.cs (Usar como ejemplo el mismo archivo de PlatformService)
+4. Agregamos los DbSets usando los modelos antes creados. (estas seran las tablas que EF creara)
+5. Agregamos las relaciones de las tablas sobre escribiendo el metodo OnModelCreating
+```
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Platform>()
+                .HasMany(p => p.Commands)
+                .WithOne(p => p.Platform!)
+                .HasForeignKey(p => p.PlatformId);
+        }
+```
+Este código establece una relación entre Platform y Command donde una Platform puede tener muchos Commands, y cada Command tiene una clave foránea PlatformId que hace referencia a su Platform correspondiente.
+
+**modelBuilder.Entity<Platform>():** Esto le dice a Entity Framework Core que estamos configurando la entidad Platform.
+
+**.HasMany(p => p.Commands):** Esto define que la entidad Platform tiene una relación de "uno a muchos" con la entidad Command. En otras palabras, una Platform puede tener muchos Commands.
+
+**.WithOne(p => p.Platform!):** Esto define la parte inversa de la relación, especificando que cada Command tiene una relación de "uno a uno" con una Platform. El signo de exclamación (!) es un operador de supresión de advertencias de nulabilidad que le dice al compilador que Platform no será null.
+
+**.HasForeignKey(p => p.PlatformId):** Esto configura la clave foránea (foreign key) en la entidad Command que hace referencia a la entidad Platform. En este caso, PlatformId es la clave foránea en Command que se utiliza para vincular a la entidad Platform.
+
+
+```
+            modelBuilder.Entity<Command>()
+                .HasOne(p => p.Platform)
+                .WithMany(p => p.Commands)
+                .HasForeignKey(p => p.PlatformId);
+```
+Este código establece la relación entre Command y Platform donde cada Command está asociado con una Platform, y una Platform puede tener muchos Commands. La clave foránea PlatformId en Command se utiliza para mantener esta relación.
+
+### Implementar repositorio
+En el folder Data crear la interfaz ICommandRepo.cs donde definimos las firmas de los metodos 
+tanto para plataform como para command
+
+```
+        bool SaveChanges();
+
+        // Platforms
+        IEnumerable<Platform> GetAllPlatforms();
+        void CreatePlatform(Platform plat);
+        bool PlatformExists(int PlatformId);
+
+        // Commands
+        IEnumerable<Command> GetAllCommanfsForPlatform(int platformId);
+        Command GetCommand (int platformId, int commandId);
+        void CreateCommand(int platformId, Command command);
+```
+Ahora debemos crear la clase CommandRepo.cs que implementa esta interfaz.
+Implementamos los metodos de la interfaz y rellenamos estos metodos con el codigo para devolver la informacion requerida en cada caso
+
+**Ejemplo:**
+```
+        public IEnumerable<Command> GetAllCommandsForPlatform(int platformId)
+        {
+            return _context.Commands
+                           .Where(c => c.PlatformId == platformId)
+                           .OrderBy(c => c.Platform.Name);
+        }
+
+        public bool PlatformExists(int platformId)
+        {
+            return _context.Platforms.Any(p => p.Id == platformId);
+        }
+
+        public bool SaveChanges()
+        {
+            return (_context.SaveChanges() >= 0);
+        }
+```  
+
+### DTOs ###
+Crear folder llamado DTOS
+* Agregar DTOs PlatformReadDto, CommandReadDto y CommandCreateDto.
+
+### Agregar Automapper 
+* En el archivo startup.cs en el metodo ConfigureServices agregar 
+
+``` services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies()); ```
+6:42:00
+### Agregar Profiles 
+* Crear un folder llamado Profiles crear un archivo de profiles llamado CommandsProfiles.cs
+Insertar los profiles a mapear
+```
+            // Source -> Target
+            CreateMap<Platform, PlatformReadDto>();
+            CreateMap<CommandCreateDto, Command>();
+            CreateMap<Command, CommandReadDto>();
+```
+
+* Implemetar todos los los endpoints en los controladores de PlatformsController y CommnadsController
+
+7:20:00
+
