@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using PlatformService.AsyncDataServices;
 using PlatformService.Data;
 using PlatformService.Dtos;
 using PlatformService.Models;
@@ -17,12 +18,14 @@ namespace PlatformService.Controllers
         private readonly IPlatformRepo _repository;
         private readonly IMapper _mapper;
         private readonly ICommandDataClient _commandDataClient;
+        private readonly IMessageBusClient _messageBusClient;
 
-        public PlatformsController(IPlatformRepo repository, IMapper mapper, ICommandDataClient commandDataClient)
+        public PlatformsController(IPlatformRepo repository, IMapper mapper, ICommandDataClient commandDataClient, IMessageBusClient messageBusClient)
         {
             _repository = repository;
             _mapper = mapper;
             _commandDataClient = commandDataClient;
+            _messageBusClient = messageBusClient;
         }
 
         [HttpGet]
@@ -48,28 +51,44 @@ namespace PlatformService.Controllers
         [HttpPost]
         public async Task<ActionResult<PlatformReadDto>> CreatePlatform(PlatformCreateDto platformCreateDto)
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("--> Creating Platform desde el PlatformService...");
             var platformModel = _mapper.Map<Platform>(platformCreateDto);
             _repository.CreatePlatform(platformModel);
             _repository.SaveChanges();
 
-            var platfromReadDto = _mapper.Map<PlatformReadDto>(platformModel);
+            var platformReadDto = _mapper.Map<PlatformReadDto>(platformModel);
 
-            // aqui enviamos el mensage al servicio de commandos
+            // Send Sync Message
+            // aqui enviamos el mensage SINCRONO al servicio de commandos
             // de que se ha creado una nueva plataforma
             // usando el nuevo httpclient SendPlatformToCommand
             try
             { 
-                await _commandDataClient.SendPlatformToCommand(platfromReadDto);
+                await _commandDataClient.SendPlatformToCommand(platformReadDto);
             }
             catch (Exception ex)
             {
                 // Si el servicio de commandos esta caido enviara una excepcion
                 // informando que no se pudo enviar el mensaje al command service
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"--> Could not send the messagge synchronosyly to the command service: {ex.Message}");
             }
 
-            return CreatedAtRoute(nameof(GetPlatformById), new { id = platfromReadDto.Id }, platfromReadDto);
+            // Send Async Message
+            try
+            {
+                var platformPublishDto = _mapper.Map<PlatformPublishedDto>(platformReadDto);
+                platformPublishDto.Event = "Platform Published";
+                _messageBusClient.PublishNewPlatform(platformPublishDto);
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"--> Could not send the messagge asynchronosyly to the command service: {ex.Message}");
+            }
+
+            return CreatedAtRoute(nameof(GetPlatformById), new { id = platformReadDto.Id }, platformReadDto);
         }
 
 
