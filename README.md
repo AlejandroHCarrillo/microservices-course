@@ -639,12 +639,15 @@ kubectl get pods
 * Para probar si esta corriendo RabbitMQ hay que abrir un navegador e ir a la siguiente URL 
 http://localhost:15672/
 
+gest/gest
+
 Esta URL abre la interfaz web de RabbitMQ.
 
-Para usar RabbitMQ en los proyectos, hay que agregar el paquete de Nuguet
-En el directorio de PlatformService ejecutar 
+Para usar RabbitMQ en los proyectos, hay que agregar el paquete de Nuguet.
 
-dotnet add package RabbitMQ.Client --version 6.2.2
+>En el directorio de PlatformService ejecutar:
+
+``` dotnet add package RabbitMQ.Client --version 6.2.2 ```
 
 en el archivo **appsetings.Development.json** agregar dos nuevas entradas
 
@@ -653,7 +656,7 @@ en el archivo **appsetings.Development.json** agregar dos nuevas entradas
     "RabbitMQPort": "5672", 
 ```
 
-en el archivo **appsetings.Development.json** agregar las entradas
+en el archivo **appsetings.Production.json** agregar las entradas
 
 ``` 
     "RabbitMQHost": "rabbitmq-clusterip-srv", 
@@ -708,5 +711,60 @@ En el PlatformsController inyectamos la interfaz IMessageBusClient con todo lo q
 
 
 
+**La parte mas dificil es:**
+
+1. Subscribirse al message bus
+2. derminar el evento en el message bus 
+3. Hacer algo con el evento determinado
+
+Agregar paquete RabbitMQ al proyecto de **CommandService**
+
+``` dotnet add package RabbitMQ.Client --version 6.2.2 ```
+
+ahora hay que a actualizar los archivos de appsetting igual que en el proyecto PlatformService.
+
+en el archivo **appsetings.Development.json** agregar dos nuevas entradas
+
+``` 
+    "RabbitMQHost": "localhost", 
+    "RabbitMQPort": "5672", 
+```
+
+Crear el archivo **appsetings.Production.json** agregar solo las entradas
+
+``` 
+    "RabbitMQHost": "rabbitmq-clusterip-srv", 
+    "RabbitMQPort": "5672", 
+```
+
+Ahora hay que crear los Dtos que suporten la recepcion de la plataforma
+
+* PlatformPublishedDto.cs 
+Para este dto debemos hacer un mapeo explicito entre el id de este Dto y el ExternalID del Modelo
+
+```             CreateMap<PlatformPublishedDto, Platform>()
+                .ForMember(dest => dest.ExternalID, opt => opt.MapFrom(src => src.Id));
+```
+
+* GenericEventDto.cs
+
+Agregamos un metodo mas a la interfaz ICommandRepo llamado ExternalPlatformExists
+Implementamos el metodo en la clase.
+
+Creamos la carpeta EventProcessing  
 
 
+[8:57:46](https://youtu.be/DgVjEo3OGBI?t=32266) 
+Registrar el servicio de procesamiento en el startup.cs
+``` services.AddSingleton<IEventProcessor, EventProcessor>(); ```
+
+
+
+**Singleton:** Se crea la primera vez que es requerido y las siguientes veces que es requerido se usa la misma instancia
+
+**Scoped:** Se usa la misma instancia en el request paro es creada una nueva cada nuevo request
+
+**Transient:** Se provee una nueva instancia cada vez, nunca se reusa la misma.
+
+
+* Creamos un dataService ASINCRONO para escucher desde el commandsService en el message bus
