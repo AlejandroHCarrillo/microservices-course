@@ -26,7 +26,7 @@ namespace CommandsService.EventProcessing
             switch (eventType)
             {
                 case EventType.PlatformPublished:
-                    // TODO: 
+                    addPlatform(message);
                     break;
                 default:
                     break;
@@ -42,10 +42,14 @@ namespace CommandsService.EventProcessing
             switch (evenType.Event)
             {
                 case "Platform_Published":
-                    Console.WriteLine("--> Platform Publiched Event Detected");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("--> Platform Published Event Detected");
+                    Console.ResetColor();
                     return EventType.PlatformPublished;
                 default:
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("--> Could not determinate the event type");
+                    Console.ResetColor();
                     return EventType.Undetermined;
             }
         }
@@ -66,6 +70,8 @@ namespace CommandsService.EventProcessing
                     {
                         repo.CreatePlatform(plat);
                         repo.SaveChanges();
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"--> Platform added!... ");
                     }
                     else {
                         Console.ForegroundColor = ConsoleColor.Magenta;

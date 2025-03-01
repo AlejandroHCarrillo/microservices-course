@@ -751,20 +751,114 @@ Para este dto debemos hacer un mapeo explicito entre el id de este Dto y el Exte
 Agregamos un metodo mas a la interfaz ICommandRepo llamado ExternalPlatformExists
 Implementamos el metodo en la clase.
 
-Creamos la carpeta EventProcessing  
+## Event Procesor ##
 
+El Event Procesor nos a yuda a determinar cual fue el evento se envio en el mensaje.
 
-[8:57:46](https://youtu.be/DgVjEo3OGBI?t=32266) 
+* Creamos la carpeta EventProcessing
+* Creamos la interfaz IEventProcessor.cs con una sola firma llamada ProcessEvent
+* Creamos la clase EventProcessor.cs e implementamos la interfaz anterior
+* Creamos el Contructor e inyectamos IServiceScopeFactory y IMapper mapper
+* Creamos un enum llamado EventType con los elementos PlatformPublished y Undetermined, estos nos ayudan a establecer los tipos permitidos.
+* Creamos el metodo privado DetermineEvent que nos ayuda a seleccionar el tipo de evento apoyado por el enum.
+* Creamos el metodo privado addPlatform que sera el encargado de guardar la nueva plataforma
+* [8:57:46](https://youtu.be/DgVjEo3OGBI?t=32266) 
 Registrar el servicio de procesamiento en el startup.cs
 ``` services.AddSingleton<IEventProcessor, EventProcessor>(); ```
 
+## Services Lifetimes
+
+Los tiempos de vida (lifetimes) de los servicios se definen para controlar cómo se crean y gestionan las instancias de los servicios en el contenedor de dependencias. Los tres tiempos de vida más comunes son **Singleton, Transient y Scoped**.
+
+Estos tiempos de vida ayudan a controlar el ciclo de vida de los objetos inyectados y a gestionar correctamente el consumo de recursos en tu aplicación.
 
 
-**Singleton:** Se crea la primera vez que es requerido y las siguientes veces que es requerido se usa la misma instancia
+**Singleton:** Un servicio con tiempo de vida Singleton se crea una vez y se comparte a lo largo de toda la aplicación. Es decir, se usa la misma instancia cada vez que se solicita ese servicio.
 
-**Scoped:** Se usa la misma instancia en el request paro es creada una nueva cada nuevo request
+Útil para servicios que mantienen estado o contienen información global que debe ser compartida entre todas las partes de la aplicación.
 
-**Transient:** Se provee una nueva instancia cada vez, nunca se reusa la misma.
+Ejemplo: servicios de configuración, gestores de caché.
+
+**Transient:** Un servicio con tiempo de vida Transient se crea cada vez que se solicita. Es decir, se crea una nueva instancia del servicio en cada solicitud.
+
+Útil para servicios ligeros y sin estado que no requieren almacenamiento de información entre solicitudes.
+
+Ejemplo: servicios de lógica de negocio que no mantienen estado.
+
+**Scoped:** Un servicio con tiempo de vida Scoped se crea una vez por cada solicitud (scope). En aplicaciones web, esto significa una instancia por cada solicitud HTTP.
+
+Útil para servicios que deben mantener estado solo durante la vida de una solicitud, como contextos de base de datos en aplicaciones web.
+
+Ejemplo: servicios de acceso a datos (DbContext).
 
 
-* Creamos un dataService ASINCRONO para escucher desde el commandsService en el message bus
+## Message Bus subscriber ##
+
+Un Message Bus Subscriber es un componente en un sistema de mensajería basado en buses de mensajes (message bus). Su función principal es escuchar (o suscribirse) a mensajes que se publican en un bus de mensajes y actuar en consecuencia. Este patrón de mensajería se utiliza comúnmente en arquitecturas de microservicios para permitir la comunicación asíncrona y desacoplada entre diferentes componentes del sistema.
+
+**¿Cómo funciona?**
+Publisher (Publicador): Envía mensajes al bus de mensajes.
+
+Message Bus (Bus de Mensajes): Actúa como intermediario, canalizando los mensajes desde los publicadores hasta los suscriptores.
+
+Subscriber (Suscriptor): Recibe y procesa los mensajes del bus de mensajes.
+
+**Beneficios**
+Desacoplamiento: Los publicadores y suscriptores no necesitan conocer la existencia de los demás. Solo se comunican a través del bus de mensajes.
+
+Escalabilidad: Facilita la escalabilidad horizontal al permitir que múltiples suscriptores manejen diferentes partes del sistema.
+
+Resiliencia: Mejora la resiliencia del sistema al permitir la comunicación asíncrona y gestionar los fallos de forma aislada.
+
+***Implementación:***
+
+* Crearemos un dataService ASINCRONO para escucher desde el commandsService en el message bus.
+Este servicio estara corriendo en background y estara escuchando, se iniciara cuando nuestro servicio inicie y estara escuchando continuamente el message bus por eventos. 
+
+[9:00:23](https://youtu.be/DgVjEo3OGBI?t=32400)
+
+* Crear Folder AsyncDataServices
+* Crear clase MessageBusSucriber 
+* Heredamos de la clase abstracta BackgroundService
+* Injectamos en el constructor los servicios IConfiguration y IEventProcessor.
+* Dentro del construcctor ejecutamos un metodo para incializar RabbitMQ
+* Creamos el metodo InitializeRabbitMQ donde configuramos la connection, el channel, el ExchangeDeclare y el queueName.
+* Crear los metodos RabbitMQ_ConnectionShutDown, Dispose
+* Crear el metodo ExecuteAsync (Este metodo es muy importante es donde se hace la magia)
+* Registrar el servicio en la clase startup.
+
+Para probar hay que ejecutar ambos proyectos localmente
+y agregar una nueva plataforma en el Platform service (POST http://localhost:5000/api/platforms)
+En la consola de Command service veremos los siguientes mensajes
+--> Event received!
+Dertemining event {"Id":7,"Name":"New Plat","Event":"Platform_Published"}
+--> Platform Published Event Detected
+--> Platform added!...
+
+Si todo funciona 
+
+
+Ahora vamos a publicar los contenedores
+En el directorio del proyecto PlatformService (Debe existir el dockerfile)
+para crear una nueva imagen con mis cambios
+
+``` 
+docker build -t ahernandezcarrillo/platformservice . 
+docker push ahernandezcarrillo/platformservice
+```
+
+```
+docker build -t ahernandezcarrillo/commandservice . 
+docker push ahernandezcarrillo/commandservice
+
+```
+
+kubectl get deployments
+
+kubectl rollout restart deployment platforms-depl
+
+ 
+ ## GrPC ##
+ [9:39:12](https://youtu.be/DgVjEo3OGBI?t=34752)
+
+ 
