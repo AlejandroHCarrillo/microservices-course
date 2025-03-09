@@ -33,7 +33,7 @@ Abrir folder del proyecto con code
 
 code -r PlatformService
 
-**Instalar packetes** 
+**Instalar paquetes** 
 * dotnet add package AutoMapper.Extensions.Microsoft.DependencyInjection --version 8.1.1
 * dotnet add package Microsoft.EntityFrameworkCore --version 5.0.8
 * dotnet add package Microsoft.EntityFrameworkCore.Design --version 5.0.8
@@ -858,7 +858,167 @@ kubectl get deployments
 kubectl rollout restart deployment platforms-depl
 
  
- ## GrPC ##
+ ## gRPC ##
  [9:39:12](https://youtu.be/DgVjEo3OGBI?t=34752)
 
- 
+* gRPC (gRPC Remote Procedure Calls) es un framework de código abierto desarrollado por Google que permite la comunicación eficiente entre servicios en una arquitectura de microservicios. 
+* Utiliza HTTP/2 para el transporte (TLS) y Protocol Buffers (Protobuf) como el lenguaje de descripción de interfaz (IDL) para serializar los datos.
+* High performance.
+
+### ¿Por qué usar gRPC?
+
+**Alto rendimiento:** gRPC es más rápido y eficiente en comparación con REST, especialmente en escenarios de alta carga y baja latencia1.
+
+**Soporte para múltiples lenguajes:** gRPC es compatible con más de 10 lenguajes de programación, lo que facilita la interoperabilidad entre servicios desarrollados en diferentes lenguajes1.
+
+**Streaming bidireccional:** Gracias a HTTP/2, gRPC soporta streaming bidireccional, permitiendo una comunicación continua entre cliente y servidor1.
+
+**Menor consumo de red:** Utiliza Protobuf para la serialización, lo que reduce significativamente el tamaño de los mensajes en comparación con JSON1.
+
+### Implementar gRPC 
+1. Primero hay que modificar el archivo platforms-depl.yaml y agregar el siguiente codigo:
+```
+  - name: plafromgrpc
+    protocol: TCP
+    port: 666
+    targetPort: 666
+```
+aplicar este cambios
+
+> Verficar los servicios
+
+* kubectl get services
+
+>Para aplicar el archivo yaml platforms-service
+
+kubectl apply -f platforms-depl.yaml
+
+2. Configurar kestrel en el  appsettings.Production.json 
+
+```
+    "Kestrel": {
+        "Endpoints": {
+            "Grpc": {
+                "Protocols": "Http2",
+                "Url": "http://platforms-clusterip-srv:666"
+            },
+            "webapi": {
+                "Protocols": "Http1",
+                "Url": "http://platforms-clusterip-srv:80"
+            }
+        }
+    }
+```
+
+3. Al proyecto de Platforms agregar la referencia a Grpc.AspNetCore version 2.38.0
+
+```
+dotnet add package Grpc.AspNetCore --version 2.38.0
+```
+
+4. Al proyecto de CommandsService agregar las referencias: 
+```
+dotnet add package Grpc.Tools --version 2.39.1
+
+dotnet add package Grpc.Net.Client --version 2.38.0
+
+dotnet add package Google.Protobuf --version 3.17.3
+```
+
+5. Construir el Proto File
+
+En gRPC, los archivos .proto (abreviatura de Protocol Buffers) son archivos de texto plano que definen la estructura de los datos y los servicios que se utilizarán en la comunicación entre cliente y servidor. Estos archivos son esenciales para la serialización y deserialización de datos en gRPC.
+
+Los archivos proto contienen la definicion de mensajes y de servicios.
+
+Los mensajes son estructuras de datos que se enviarán entre el cliente y el servidor. Cada mensaje está compuesto por campos con tipos de datos específicos.
+
+Los servicios son conjuntos de métodos RPC (Remote Procedure Call) que el servidor ofrece. Cada método define los tipos de mensajes que acepta y devuelve.
+
+* En el proyecto Platforms crear un folder llamado protos y dentro crear el archivo platforms.proto con el contenido siguiente:
+
+```
+syntax = "proto3";
+
+option csharp_namespace = "PlatformService";
+
+service GrpcPlatform {
+    rpc GetAllPlatforms (GetAllRequest) returns (PlatformResponse);
+}
+
+message GetAllRequest {}
+
+message GrpcPlatformModel{
+    int32 platformId = 1;
+    string name = 2;
+    string publisher = 3;
+}
+
+message PlatformResponse {
+    repeated GrpcPlatformModel platform = 1;
+}
+```
+
+> Nota: Dentro de los mensajes los numeros son la posicion del campo no un valor asignado. 
+* Ya que tenemos el archivo Proto hay que registrarlo en el proyecto PlatformService.csproj agregando las siguientes lineas.
+
+```
+  <ItemGroup>
+    <Protobuf Include="Protos\platforms.proto" GrpcServices="Server"/>
+  </ItemGroup>
+```
+
+* Una vez hecho esto hacer build al proyecto y debemos encontrar la carpeta Protos con 2 archivos dentro del folder obj/Debug/net5.0
+
+6. Dentro del folder SyncDataServices crear un folder llamado Grpc y dentro un archivo GrpcPlatformService.cs 
+
+7. Ahora en el proyecto Command service repatir los pasos 5 y 6 pero al modificar el archivo del proyecto commandService.csproj hay que cambiar a Client en lugar de server.
+
+```
+  <ItemGroup>
+    <Protobuf Include="Protos\platforms.proto" GrpcServices="Client"/>
+  </ItemGroup>
+```
+
+8. En el proyecto de CommandsService crear el folder de SyncDataServices/Grpc, 
+dentro crear la interface IPlatformDataClient.cs y la clase PlatformDataClient.cs
+
+9. Registrar el servicio en el archivo startup.cs
+
+10. Crear archivo PrepDb.cs y resgistrarlo en startup.cs
+
+Probar localmente
+
+* Echar a andar ambos proyectos
+
+* En postman agregar una nueva plataforma en el ambiente localhost
+    POST http://localhost:5000/api/platforms 
+
+* Esa nueva plataforma debe ser visible desde el servicio de commands
+    GET http://localhost:6000/api/c/platforms
+
+Si todo salio bien procedemos a procedemos a refrescar las imagenes de los contenedores
+
+* En el folder de PlatformSevice
+
+docker build -t ahernandezcarrillo/platformservice .
+
+docker push ahernandezcarrillo/platformservice 
+
+* En el folder de CommandService ejecutar
+
+docker build -t ahernandezcarrillo/commandservice .
+
+docker push ahernandezcarrillo/commandservice
+
+* Reiniciar los kubernetes
+
+kubectl get deployments
+
+kubectl rollout restart deployment platforms-depl
+
+kubectl get pods
+
+kubectl rollout restart deployment commands-depl
+
+kubectl get pods
