@@ -33,7 +33,7 @@ Abrir folder del proyecto con code
 
 code -r PlatformService
 
-**Instalar packetes** 
+**Instalar paquetes** 
 * dotnet add package AutoMapper.Extensions.Microsoft.DependencyInjection --version 8.1.1
 * dotnet add package Microsoft.EntityFrameworkCore --version 5.0.8
 * dotnet add package Microsoft.EntityFrameworkCore.Design --version 5.0.8
@@ -639,12 +639,15 @@ kubectl get pods
 * Para probar si esta corriendo RabbitMQ hay que abrir un navegador e ir a la siguiente URL 
 http://localhost:15672/
 
+gest/gest
+
 Esta URL abre la interfaz web de RabbitMQ.
 
-Para usar RabbitMQ en los proyectos, hay que agregar el paquete de Nuguet
-En el directorio de PlatformService ejecutar 
+Para usar RabbitMQ en los proyectos, hay que agregar el paquete de Nuguet.
 
-dotnet add package RabbitMQ.Client --version 6.2.2
+>En el directorio de PlatformService ejecutar:
+
+``` dotnet add package RabbitMQ.Client --version 6.2.2 ```
 
 en el archivo **appsetings.Development.json** agregar dos nuevas entradas
 
@@ -653,7 +656,7 @@ en el archivo **appsetings.Development.json** agregar dos nuevas entradas
     "RabbitMQPort": "5672", 
 ```
 
-en el archivo **appsetings.Development.json** agregar las entradas
+en el archivo **appsetings.Production.json** agregar las entradas
 
 ``` 
     "RabbitMQHost": "rabbitmq-clusterip-srv", 
@@ -708,5 +711,314 @@ En el PlatformsController inyectamos la interfaz IMessageBusClient con todo lo q
 
 
 
+**La parte mas dificil es:**
+
+1. Subscribirse al message bus
+2. derminar el evento en el message bus 
+3. Hacer algo con el evento determinado
+
+Agregar paquete RabbitMQ al proyecto de **CommandService**
+
+``` dotnet add package RabbitMQ.Client --version 6.2.2 ```
+
+ahora hay que a actualizar los archivos de appsetting igual que en el proyecto PlatformService.
+
+en el archivo **appsetings.Development.json** agregar dos nuevas entradas
+
+``` 
+    "RabbitMQHost": "localhost", 
+    "RabbitMQPort": "5672", 
+```
+
+Crear el archivo **appsetings.Production.json** agregar solo las entradas
+
+``` 
+    "RabbitMQHost": "rabbitmq-clusterip-srv", 
+    "RabbitMQPort": "5672", 
+```
+
+Ahora hay que crear los Dtos que suporten la recepcion de la plataforma
+
+* PlatformPublishedDto.cs 
+Para este dto debemos hacer un mapeo explicito entre el id de este Dto y el ExternalID del Modelo
+
+```             CreateMap<PlatformPublishedDto, Platform>()
+                .ForMember(dest => dest.ExternalID, opt => opt.MapFrom(src => src.Id));
+```
+
+* GenericEventDto.cs
+
+Agregamos un metodo mas a la interfaz ICommandRepo llamado ExternalPlatformExists
+Implementamos el metodo en la clase.
+
+## Event Procesor ##
+
+El Event Procesor nos a yuda a determinar cual fue el evento se envio en el mensaje.
+
+* Creamos la carpeta EventProcessing
+* Creamos la interfaz IEventProcessor.cs con una sola firma llamada ProcessEvent
+* Creamos la clase EventProcessor.cs e implementamos la interfaz anterior
+* Creamos el Contructor e inyectamos IServiceScopeFactory y IMapper mapper
+* Creamos un enum llamado EventType con los elementos PlatformPublished y Undetermined, estos nos ayudan a establecer los tipos permitidos.
+* Creamos el metodo privado DetermineEvent que nos ayuda a seleccionar el tipo de evento apoyado por el enum.
+* Creamos el metodo privado addPlatform que sera el encargado de guardar la nueva plataforma
+* [8:57:46](https://youtu.be/DgVjEo3OGBI?t=32266) 
+Registrar el servicio de procesamiento en el startup.cs
+``` services.AddSingleton<IEventProcessor, EventProcessor>(); ```
+
+## Services Lifetimes
+
+Los tiempos de vida (lifetimes) de los servicios se definen para controlar cómo se crean y gestionan las instancias de los servicios en el contenedor de dependencias. Los tres tiempos de vida más comunes son **Singleton, Transient y Scoped**.
+
+Estos tiempos de vida ayudan a controlar el ciclo de vida de los objetos inyectados y a gestionar correctamente el consumo de recursos en tu aplicación.
 
 
+**Singleton:** Un servicio con tiempo de vida Singleton se crea una vez y se comparte a lo largo de toda la aplicación. Es decir, se usa la misma instancia cada vez que se solicita ese servicio.
+
+Útil para servicios que mantienen estado o contienen información global que debe ser compartida entre todas las partes de la aplicación.
+
+Ejemplo: servicios de configuración, gestores de caché.
+
+**Transient:** Un servicio con tiempo de vida Transient se crea cada vez que se solicita. Es decir, se crea una nueva instancia del servicio en cada solicitud.
+
+Útil para servicios ligeros y sin estado que no requieren almacenamiento de información entre solicitudes.
+
+Ejemplo: servicios de lógica de negocio que no mantienen estado.
+
+**Scoped:** Un servicio con tiempo de vida Scoped se crea una vez por cada solicitud (scope). En aplicaciones web, esto significa una instancia por cada solicitud HTTP.
+
+Útil para servicios que deben mantener estado solo durante la vida de una solicitud, como contextos de base de datos en aplicaciones web.
+
+Ejemplo: servicios de acceso a datos (DbContext).
+
+
+## Message Bus subscriber ##
+
+Un Message Bus Subscriber es un componente en un sistema de mensajería basado en buses de mensajes (message bus). Su función principal es escuchar (o suscribirse) a mensajes que se publican en un bus de mensajes y actuar en consecuencia. Este patrón de mensajería se utiliza comúnmente en arquitecturas de microservicios para permitir la comunicación asíncrona y desacoplada entre diferentes componentes del sistema.
+
+**¿Cómo funciona?**
+Publisher (Publicador): Envía mensajes al bus de mensajes.
+
+Message Bus (Bus de Mensajes): Actúa como intermediario, canalizando los mensajes desde los publicadores hasta los suscriptores.
+
+Subscriber (Suscriptor): Recibe y procesa los mensajes del bus de mensajes.
+
+**Beneficios**
+Desacoplamiento: Los publicadores y suscriptores no necesitan conocer la existencia de los demás. Solo se comunican a través del bus de mensajes.
+
+Escalabilidad: Facilita la escalabilidad horizontal al permitir que múltiples suscriptores manejen diferentes partes del sistema.
+
+Resiliencia: Mejora la resiliencia del sistema al permitir la comunicación asíncrona y gestionar los fallos de forma aislada.
+
+***Implementación:***
+
+* Crearemos un dataService ASINCRONO para escucher desde el commandsService en el message bus.
+Este servicio estara corriendo en background y estara escuchando, se iniciara cuando nuestro servicio inicie y estara escuchando continuamente el message bus por eventos. 
+
+[9:00:23](https://youtu.be/DgVjEo3OGBI?t=32400)
+
+* Crear Folder AsyncDataServices
+* Crear clase MessageBusSucriber 
+* Heredamos de la clase abstracta BackgroundService
+* Injectamos en el constructor los servicios IConfiguration y IEventProcessor.
+* Dentro del construcctor ejecutamos un metodo para incializar RabbitMQ
+* Creamos el metodo InitializeRabbitMQ donde configuramos la connection, el channel, el ExchangeDeclare y el queueName.
+* Crear los metodos RabbitMQ_ConnectionShutDown, Dispose
+* Crear el metodo ExecuteAsync (Este metodo es muy importante es donde se hace la magia)
+* Registrar el servicio en la clase startup.
+
+Para probar hay que ejecutar ambos proyectos localmente
+y agregar una nueva plataforma en el Platform service (POST http://localhost:5000/api/platforms)
+En la consola de Command service veremos los siguientes mensajes
+--> Event received!
+Dertemining event {"Id":7,"Name":"New Plat","Event":"Platform_Published"}
+--> Platform Published Event Detected
+--> Platform added!...
+
+Si todo funciona 
+
+
+Ahora vamos a publicar los contenedores
+En el directorio del proyecto PlatformService (Debe existir el dockerfile)
+para crear una nueva imagen con mis cambios
+
+``` 
+docker build -t ahernandezcarrillo/platformservice . 
+docker push ahernandezcarrillo/platformservice
+```
+
+```
+docker build -t ahernandezcarrillo/commandservice . 
+docker push ahernandezcarrillo/commandservice
+
+```
+
+kubectl get deployments
+
+kubectl rollout restart deployment platforms-depl
+
+ 
+ ## gRPC ##
+ [9:39:12](https://youtu.be/DgVjEo3OGBI?t=34752)
+
+* gRPC (gRPC Remote Procedure Calls) es un framework de código abierto desarrollado por Google que permite la comunicación eficiente entre servicios en una arquitectura de microservicios. 
+* Utiliza HTTP/2 para el transporte (TLS) y Protocol Buffers (Protobuf) como el lenguaje de descripción de interfaz (IDL) para serializar los datos.
+* High performance.
+
+### ¿Por qué usar gRPC?
+
+**Alto rendimiento:** gRPC es más rápido y eficiente en comparación con REST, especialmente en escenarios de alta carga y baja latencia1.
+
+**Soporte para múltiples lenguajes:** gRPC es compatible con más de 10 lenguajes de programación, lo que facilita la interoperabilidad entre servicios desarrollados en diferentes lenguajes1.
+
+**Streaming bidireccional:** Gracias a HTTP/2, gRPC soporta streaming bidireccional, permitiendo una comunicación continua entre cliente y servidor1.
+
+**Menor consumo de red:** Utiliza Protobuf para la serialización, lo que reduce significativamente el tamaño de los mensajes en comparación con JSON1.
+
+### Implementar gRPC 
+1. Primero hay que modificar el archivo platforms-depl.yaml y agregar el siguiente codigo:
+```
+  - name: plafromgrpc
+    protocol: TCP
+    port: 666
+    targetPort: 666
+```
+aplicar este cambios
+
+> Verficar los servicios
+
+* kubectl get services
+
+>Para aplicar el archivo yaml platforms-service
+
+kubectl apply -f platforms-depl.yaml
+
+2. Configurar kestrel en el  appsettings.Production.json 
+
+```
+    "Kestrel": {
+        "Endpoints": {
+            "Grpc": {
+                "Protocols": "Http2",
+                "Url": "http://platforms-clusterip-srv:666"
+            },
+            "webapi": {
+                "Protocols": "Http1",
+                "Url": "http://platforms-clusterip-srv:80"
+            }
+        }
+    }
+```
+
+3. Al proyecto de Platforms agregar la referencia a Grpc.AspNetCore version 2.38.0
+
+```
+dotnet add package Grpc.AspNetCore --version 2.38.0
+```
+
+4. Al proyecto de CommandsService agregar las referencias: 
+```
+dotnet add package Grpc.Tools --version 2.39.1
+
+dotnet add package Grpc.Net.Client --version 2.38.0
+
+dotnet add package Google.Protobuf --version 3.17.3
+```
+
+5. Construir el Proto File
+
+En gRPC, los archivos .proto (abreviatura de Protocol Buffers) son archivos de texto plano que definen la estructura de los datos y los servicios que se utilizarán en la comunicación entre cliente y servidor. Estos archivos son esenciales para la serialización y deserialización de datos en gRPC.
+
+Los archivos proto contienen la definicion de mensajes y de servicios.
+
+Los mensajes son estructuras de datos que se enviarán entre el cliente y el servidor. Cada mensaje está compuesto por campos con tipos de datos específicos.
+
+Los servicios son conjuntos de métodos RPC (Remote Procedure Call) que el servidor ofrece. Cada método define los tipos de mensajes que acepta y devuelve.
+
+* En el proyecto Platforms crear un folder llamado protos y dentro crear el archivo platforms.proto con el contenido siguiente:
+
+```
+syntax = "proto3";
+
+option csharp_namespace = "PlatformService";
+
+service GrpcPlatform {
+    rpc GetAllPlatforms (GetAllRequest) returns (PlatformResponse);
+}
+
+message GetAllRequest {}
+
+message GrpcPlatformModel{
+    int32 platformId = 1;
+    string name = 2;
+    string publisher = 3;
+}
+
+message PlatformResponse {
+    repeated GrpcPlatformModel platform = 1;
+}
+```
+
+> Nota: Dentro de los mensajes los numeros son la posicion del campo no un valor asignado. 
+* Ya que tenemos el archivo Proto hay que registrarlo en el proyecto PlatformService.csproj agregando las siguientes lineas.
+
+```
+  <ItemGroup>
+    <Protobuf Include="Protos\platforms.proto" GrpcServices="Server"/>
+  </ItemGroup>
+```
+
+* Una vez hecho esto hacer build al proyecto y debemos encontrar la carpeta Protos con 2 archivos dentro del folder obj/Debug/net5.0
+
+6. Dentro del folder SyncDataServices crear un folder llamado Grpc y dentro un archivo GrpcPlatformService.cs 
+
+7. Ahora en el proyecto Command service repatir los pasos 5 y 6 pero al modificar el archivo del proyecto commandService.csproj hay que cambiar a Client en lugar de server.
+
+```
+  <ItemGroup>
+    <Protobuf Include="Protos\platforms.proto" GrpcServices="Client"/>
+  </ItemGroup>
+```
+
+8. En el proyecto de CommandsService crear el folder de SyncDataServices/Grpc, 
+dentro crear la interface IPlatformDataClient.cs y la clase PlatformDataClient.cs
+
+9. Registrar el servicio en el archivo startup.cs
+
+10. Crear archivo PrepDb.cs y resgistrarlo en startup.cs
+
+Probar localmente
+
+* Echar a andar ambos proyectos
+
+* En postman agregar una nueva plataforma en el ambiente localhost
+    POST http://localhost:5000/api/platforms 
+
+* Esa nueva plataforma debe ser visible desde el servicio de commands
+    GET http://localhost:6000/api/c/platforms
+
+Si todo salio bien procedemos a procedemos a refrescar las imagenes de los contenedores
+
+* En el folder de PlatformSevice
+
+docker build -t ahernandezcarrillo/platformservice .
+
+docker push ahernandezcarrillo/platformservice 
+
+* En el folder de CommandService ejecutar
+
+docker build -t ahernandezcarrillo/commandservice .
+
+docker push ahernandezcarrillo/commandservice
+
+* Reiniciar los kubernetes
+
+kubectl get deployments
+
+kubectl rollout restart deployment platforms-depl
+
+kubectl get pods
+
+kubectl rollout restart deployment commands-depl
+
+kubectl get pods
